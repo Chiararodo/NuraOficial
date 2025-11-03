@@ -42,16 +42,3 @@ desktop.ini
 *.njsproj
 *.sln
 *.sw?
-
-# ========================================
-# ⚙️ Archivos opcionales útiles de incluir
-# ----------------------------------------
-# public/
-# src/
-# package.json
-# vite.config.ts
-# tsconfig.json
-# postcss.config.js
-# tailwind.config.js
-# README.md
-# ========================================
