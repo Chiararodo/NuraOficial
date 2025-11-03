@@ -7,19 +7,51 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-.env.local
+# Dependencias
+node_modules/
 
-# Editor directories and files
+# Builds y distribuciones
+dist/
+dist-ssr/
+build/
+coverage/
+
+# Archivos locales / sensibles
+.env
+.env.*.local
+.env.local
+*.local
+
+# Archivos temporales de Vite / cache
+.vite
+.vite-deps
+.cache
+*.tsbuildinfo
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos del editor
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# ========================================
+# ⚙️ Archivos opcionales útiles de incluir
+# ----------------------------------------
+# public/
+# src/
+# package.json
+# vite.config.ts
+# tsconfig.json
+# postcss.config.js
+# tailwind.config.js
+# README.md
+# ========================================
