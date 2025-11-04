@@ -1,37 +1,39 @@
 <template>
     <div class="app-shell">
-    <header class="nura-header">
-    <img src="/logos/OFICIALwhite.png" alt="Nura" class="logo" />
-    <nav class="topnav desktop-only">
-    <RouterLink to="/app/home">Inicio</RouterLink>
-    <RouterLink to="/app/cartilla">Cartilla</RouterLink>
-    <RouterLink to="/app/agendar">Agendar</RouterLink>
-    <RouterLink to="/app/contenido">Contenido</RouterLink>
-    <RouterLink to="/app/perfil">Perfil</RouterLink>
-    </nav>
-    <InstallButton class="desktop-only" />
-    </header>
-    
-    
-    <main><RouterView /></main>
-    
-    
-    <TabBar class="mobile-only" />
+      <NuraHeader />
+  
+      <main>
+        <RouterView />
+      </main>
+  
+      <!-- Mobile only -->
+      <TabBar />
+  
+      <!-- Desktop only -->
+      <Footer />
     </div>
-    </template>
-    
-    
-    <script setup lang="ts">
-    import InstallButton from '@/components/InstallButton.vue'
-    import TabBar from '@/components/TabBar.vue'
-    </script>
-    
-    
-    <style scoped>
-    .desktop-only{ display:none }
-    .mobile-only{ display:block }
-    @media(min-width:900px){ .desktop-only{ display:flex } .mobile-only{ display:none } }
-    .nura-header{ background:#50bdbd; color:#fff; display:flex; align-items:center; gap:16px; padding:10px 16px }
-    .logo{ width:32px; height:32px }
-    main{ min-height: calc(100dvh - 100px); background: #50bdbd }
-    </style>
+  </template>
+  
+  <script setup lang="ts">
+  import NuraHeader from '@/components/NuraHeader.vue'
+  import TabBar from '@/components/TabBar.vue'
+  import Footer from '@/components/Footer.vue'
+  </script>
+  
+  <style scoped>
+  /* Altura de header para calcular el espacio del contenido */
+  :root, :host{ --hdr: 64px; --tabbar: 82px; }
+  
+  /* En mobile dejamos espacio para el TabBar.
+     El header es sticky, por eso no restamos su altura aquí. */
+  main{
+    min-height: calc(100dvh - var(--hdr));
+    padding-bottom: var(--tabbar);
+  }
+  
+  /* En desktop no hay tabbar */
+  @media (min-width: 900px){
+    main{ padding-bottom: 0; }
+  }
+  </style>
+  

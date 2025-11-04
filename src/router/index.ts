@@ -18,6 +18,7 @@ import Perfil from '@/pages/Perfil.vue'
 import Foro from '@/pages/Foro.vue'
 import Chatbot from '@/pages/Chatbot.vue'
 import Notificaciones from '@/pages/Notificaciones.vue'
+import Diary from '@/pages/Diary.vue' // ✅ nuevo
 
 import { supabase } from '@/composables/useSupabase'
 
@@ -47,6 +48,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'foro', name: 'foro', component: Foro },
       { path: 'chatbot', name: 'chatbot', component: Chatbot },
       { path: 'notificaciones', name: 'notificaciones', component: Notificaciones },
+      { path: 'diario', name: 'diario', component: Diary }, // ✅ agregado
       { path: '', redirect: '/app/home' },
     ],
   },
@@ -58,6 +60,9 @@ const routes: RouteRecordRaw[] = [
 export const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior() {
+    return { top: 0, left: 0 }
+  },
 })
 
 /** Cache en memoria para el flag de onboarding por usuario */
@@ -84,7 +89,7 @@ async function getOnboardingDone(): Promise<{ isAuthed: boolean; done: boolean; 
     return { isAuthed: true, done: true, uid }
   }
 
-  // 2) Fallback a tabla 'profiles' (si existe)
+  // 2) Fallback a tabla 'profiles'
   try {
     const { data: prof, error } = await supabase
       .from('profiles')
@@ -97,43 +102,31 @@ async function getOnboardingDone(): Promise<{ isAuthed: boolean; done: boolean; 
       return { isAuthed: true, done: true, uid }
     }
   } catch {
-    // ignorar si la tabla/columna no existe
+    // ignorar
   }
 
   onboardingCache.set(uid, false)
   return { isAuthed: true, done: false, uid }
 }
 
+const ONBOARDING_PATHS = new Set(['/onboarding', '/onboarding2', '/onboarding3'])
+const isOnboarding = (path: string) => ONBOARDING_PATHS.has(path)
+
 router.beforeEach(async (to) => {
   const { isAuthed, done } = await getOnboardingDone()
 
-  const isOnboardingRoute =
-    to.path === '/onboarding' || to.path === '/onboarding2' || to.path === '/onboarding3'
-
   // Rutas que requieren sesión
-  if (to.meta.requiresAuth && !isAuthed) {
-    return '/login'
-  }
+  if (to.meta.requiresAuth && !isAuthed) return '/login'
 
-  // Bloquear onboarding si NO está logueado
-  if (!isAuthed && isOnboardingRoute) {
-    return '/login'
-  }
+  // Bloquear onboarding si no está logueado
+  if (!isAuthed && isOnboarding(to.path)) return '/login'
 
   // Si está logueado e intenta ir a login/register → a home
-  if (isAuthed && (to.path === '/login' || to.path === '/register')) {
-    return '/app/home'
-  }
+  if (isAuthed && (to.path === '/login' || to.path === '/register')) return '/app/home'
 
-  // Forzar onboarding si no lo completó (desde cualquier ruta autenticada o pública)
-  if (isAuthed && !done && !isOnboardingRoute) {
-    return '/onboarding'
-  }
+  // Forzar onboarding si no lo completó
+  if (isAuthed && !done && !isOnboarding(to.path)) return '/onboarding'
 
-  // Si ya completó y entra a cualquier paso de onboarding → a home
-  if (isAuthed && done && isOnboardingRoute) {
-    return '/app/home'
-  }
-
-  // continuar
+  // Si ya completó y entra a onboarding → a home
+  if (isAuthed && done && isOnboarding(to.path)) return '/app/home'
 })

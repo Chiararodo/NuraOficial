@@ -1,442 +1,406 @@
 <template>
-    <section class="home">
-      <!-- GRID PRINCIPAL -->
-      <div class="grid">
-        <!-- ===== Columna Izquierda ===== -->
-        <div class="col">
-          <!-- Saludo + Nuri Picker -->
-          <div class="card">
-            <h3>¡Hola, {{ displayName }}!</h3>
-            <p class="subtle">¿Cómo te sentís hoy?</p>
-  
-            <div class="mood-row">
+  <main class="home-page">
+    <div class="grid">
+
+      <!-- COLUMNA IZQUIERDA -->
+      <section class="col">
+        <!-- Saludo + Moods -->
+        <div class="card">
+          <h2>¡Hola, {{ displayName }}!</h2>
+          <p class="sub">¿Cómo te sentís hoy?</p>
+
+          <div class="moods">
+            <button class="mood" @click="setMood('triste')">
+              <img src="/icons/nuri-triste.png" alt="Triste" />
+              <span>Triste</span>
+            </button>
+            <button class="mood" @click="setMood('normal')">
+              <img src="/icons/nuri-normal.png" alt="Normal" />
+              <span>Normal</span>
+            </button>
+            <button class="mood" @click="setMood('bien')">
+              <img src="/icons/nuri-bien.png" alt="Bien" />
+              <span>Bien</span>
+            </button>
+            <button class="mood" @click="setMood('muybien')">
+              <img src="/icons/nuri-muybien.png" alt="Muy bien" />
+              <span>Muy bien</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Frase del día -->
+        <div class="card">
+          <h3>Frase del día</h3>
+          <div class="quote">"{{ fraseDelDia }}"</div>
+        </div>
+
+        <!-- Foro activo -->
+        <div class="card">
+          <div class="foro-header">
+            <h3>Foro activo</h3>
+          </div>
+          <ul class="foro-list">
+            <li>Tips para manejar la ansiedad <small>(15)</small></li>
+            <li>Cómo transitar eventos sociales <small>(40)</small></li>
+            <li>Tips para controlar la respiración <small>(30)</small></li>
+            <li>Tips para organizar las comidas <small>(25)</small></li>
+          </ul>
+          <RouterLink class="btn-outline" to="/app/foro">Ver más del foro</RouterLink>
+        </div>
+      </section>
+
+      <!-- COLUMNA DERECHA -->
+      <section class="col">
+        <!-- Actividades de hoy + Calendario -->
+        <div class="card">
+          <h3>Actividades de hoy</h3>
+
+          <div class="calendar">
+            <div class="cal-head">
+              <span class="month">{{ monthName.toUpperCase() }}</span>
+              <span class="day-big">{{ today.getDate() }}</span>
+            </div>
+
+            <div class="cal-grid">
+              <span v-for="d in weekdays" :key="`w-${d}`" class="wd">{{ d }}</span>
+              <span v-for="i in leadingBlanks" :key="`b-${i}`" class="blank"></span>
               <button
-                v-for="m in moods"
-                :key="m.key"
-                class="mood"
-                :aria-pressed="selectedMood === m.key"
-                @click="selectMood(m.key)"
+                v-for="d in daysInMonth"
+                :key="`d-${d}`"
+                class="cal-day"
+                :class="{ today: d === today.getDate() }"
+                type="button"
               >
-                <img :src="m.src" :alt="m.label" />
-                <span>{{ m.label }}</span>
+                {{ d }}
               </button>
             </div>
-  
-            <p v-if="savedMoodMsg" class="saved">{{ savedMoodMsg }}</p>
           </div>
-  
-          <!-- Frase del día -->
-          <div class="card">
-            <h4 class="section-title">Frase del día</h4>
-            <div class="quote">“{{ phraseOfTheDay }}”</div>
-          </div>
-  
-          <!-- Foro activo -->
-          <div class="card">
-            <div class="foro-header">
-              <h4 class="section-title">Foro activo</h4>
-              <span class="down">▾</span>
-            </div>
-  
-            <ul class="foro-list">
-              <li v-for="(post, i) in forumPreview" :key="i">
-                • {{ post.title }} <small>({{ post.replies }})</small>
-              </li>
-            </ul>
-  
-            <RouterLink to="/app/foro" class="btn-secondary">
-              Ver más del foro
-            </RouterLink>
-          </div>
+
+          <ul v-if="activities.length" class="act-list">
+            <li v-for="a in activities" :key="a.id">
+              <strong>{{ formatTime(a.starts_at) }}</strong>
+              <span> {{ a.title }}</span>
+              <small v-if="a.place"> — {{ a.place }}</small>
+            </li>
+          </ul>
+          <p v-else class="empty">No tenés actividades para hoy.</p>
         </div>
-  
-        <!-- ===== Columna Derecha ===== -->
-        <div class="col">
-          <!-- Actividades de hoy -->
-          <div class="card">
-            <h4 class="section-title">Actividades de hoy</h4>
-  
-            <div class="calendar">
-              <div class="calendar-head">
-                <div class="month">{{ monthName.toUpperCase() }}</div>
-                <div class="day-big">{{ dayNumber }}</div>
-              </div>
-  
-              <div class="activities">
-                <template v-if="todayActivities.length">
-                  <div
-                    class="activity"
-                    v-for="(a, i) in todayActivities"
-                    :key="i"
-                  >
-                    <strong>{{ a.title }}</strong>
-                    <div class="time">{{ a.time }}</div>
-                  </div>
-                </template>
-                <p v-else class="empty">No tenés actividades para hoy.</p>
-              </div>
-            </div>
-          </div>
-  
-          <!-- Chatbot Banner -->
-          <RouterLink to="/app/chatbot" class="chatbot-banner card">
-            <div class="cb-text">
-              <h5>Chatbot</h5>
-              <p>Tu guía de bienestar, ahora en un chat</p>
-            </div>
-            <img
-              class="cb-nuri"
-              src="/icons/NuriBienvenida.png"
-              alt="Nuri"
-              loading="lazy"
-            />
+
+        <!-- Chatbot banner -->
+        <div>
+          <h3>NuriChat</h3>
+          <RouterLink to="/app/chatbot" class="chatbot-card">
+            <img src="/banners/chatbot-home.png" alt="Tu guía de bienestar, ahora en un chat" />
           </RouterLink>
         </div>
-      </div>
-  
-      <!-- Footer -->
-      <footer class="footer">© Copyright Nura</footer>
-    </section>
-  </template>
-  
-  <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue'
-  import { RouterLink } from 'vue-router'
-  import { useAuthStore } from '@/store/auth'
-  import { supabase } from '@/composables/useSupabase'
-  
-  /* ================== USER ================== */
-  const auth = useAuthStore()
-  const displayName = computed(() => {
-    const u = auth.user as any
-    return u?.user_metadata?.name || u?.email?.split('@')[0] || 'usuario'
-  })
-  
-  /* ================== MOOD (Nuri) ================== */
-  type MoodKey = 'triste' | 'normal' | 'bien' | 'muybien'
-  
-  const moods = [
-    { key: 'triste' as MoodKey, label: 'Triste', src: '/icons/nuri-triste.png' },
-    { key: 'normal' as MoodKey, label: 'Normal', src: '/icons/nuri-normal.png' },
-    { key: 'bien' as MoodKey, label: 'Bien', src: '/icons/nuri-bien.png' },
-    {
-      key: 'muybien' as MoodKey,
-      label: 'Muy bien',
-      src: '/icons/nuri-muybien.png'
-    }
-  ]
-  
-  const selectedMood = ref<MoodKey | null>(null)
-  const savedMoodMsg = ref('')
-  
-  function todayKey() {
-    const d = new Date()
-    return d.toISOString().slice(0, 10) // YYYY-MM-DD
-  }
-  
-  function loadSavedMood() {
-    const key = `nura:mood:${todayKey()}`
-    const v = localStorage.getItem(key)
-    if (v) selectedMood.value = v as MoodKey
-  }
-  
-  async function selectMood(mood: MoodKey) {
-    selectedMood.value = mood
-    // Guardar local
-    localStorage.setItem(`nura:mood:${todayKey()}`, mood)
-    savedMoodMsg.value = '¡Registro guardado!'
-  
-    // Intento guardar en Supabase (silencioso si falla)
-    try {
-      const uid = (auth.user as any)?.id
-      if (uid) {
-        await supabase.from('moods').insert({
-          user_id: uid,
-          date: todayKey(),
-          mood
-        })
-      }
-    } catch {
-      /* ignore – tabla opcional */
-    }
-    setTimeout(() => (savedMoodMsg.value = ''), 2200)
-  }
-  
-  onMounted(loadSavedMood)
-  
-  /* ================== FRASE DEL DÍA ================== */
-  const phrases = [
-    'Escucharte también es cuidarte',
-    'Un paso a la vez',
-    'Respirá profundo, contá hasta cuatro',
-    'Tu progreso importa, aunque sea pequeño',
-    'Sé amable con vos',
-    'Hoy es una buena oportunidad',
-    'Los límites también son amor propio',
-    'Lo estás haciendo bien',
-    'Tu bienestar es prioridad',
-    'Elegí volver a intentar'
-    // (si querés, agregamos tus ~100 frases acá)
-  ]
-  
-  const phraseOfTheDay = computed(() => {
-    const d = new Date()
-    // índice estable por día
-    const seed = Number(d.toISOString().slice(0, 10).replace(/-/g, ''))
-    return phrases[seed % phrases.length]
-  })
-  
-  /* ================== ACTIVIDADES ================== */
-  type Activity = { title: string; time: string }
-  const todayActivities = ref<Activity[]>([])
-  
-  const monthName = computed(() =>
-    new Date().toLocaleString('es-AR', { month: 'long' })
-  )
-  const dayNumber = computed(() => new Date().getDate())
-  
-  async function loadTodayActivities() {
-    // Intento leer de Supabase (tabla sugerida: appointments con columnas: user_id, date, title, time)
-    const uid = (auth.user as any)?.id
-    if (!uid) return
-  
-    try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('title,time,date')
-        .eq('user_id', uid)
-        .eq('date', todayKey())
-  
-      if (!error && Array.isArray(data) && data.length) {
-        todayActivities.value = data.map((r: any) => ({
-          title: r.title,
-          time: r.time || ''
-        }))
-        return
-      }
-    } catch {
-      // si no existe la tabla o hay error, seguimos a fallback
-    }
-  
-    // Fallback opcional (dejar vacío para mostrar el mensaje)
-    todayActivities.value = []
-  }
-  
-  onMounted(loadTodayActivities)
-  
-  /* ================== FORO (preview) ================== */
-  const forumPreview = ref([
-    { title: 'Tips para manejar la ansiedad', replies: 15 },
-    { title: 'Cómo transitar eventos sociales', replies: 40 },
-    { title: 'Controlar la respiración', replies: 30 },
-    { title: 'Organizar las comidas', replies: 25 }
-  ])
-  </script>
-  
-  <style scoped>
-  :root,
-  :host {
-    --nura-emerald: #50bdbd;
-    --nura-blue: #85b6e0;
-    --text: #1f2937;
-    --muted: #6b7280;
-    --card: #ffffff;
-    --bg: #f7fbfb;
-  }
-  
-  .home {
-    padding: 20px 16px 60px;
-    background: var(--bg);
-  }
-  
+
+      </section>
+
+    </div>
+  </main>
+</template>
+
+<script setup lang="ts">
+import { onMounted, ref, computed } from 'vue'
+import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/store/auth'
+import { supabase } from '@/composables/useSupabase'
+
+/* ========= Saludo ========= */
+const auth = useAuthStore()
+const displayName = computed(() => {
+  const metaName = (auth.user?.user_metadata as any)?.name
+  if (metaName) return metaName.split(' ')[0]
+  const email = auth.user?.email ?? 'usuario'
+  return email.split('@')[0]
+})
+
+/* ========= Frase del día ========= */
+const frases = [
+  'Sé amable con vos.',
+  'Un paso a la vez.',
+  'Respirá profundo y seguí.',
+  'Tu proceso importa.',
+  'Cuidarte también es avanzar.',
+  'El descanso también es productivo.',
+  'Soltar no es rendirse.',
+  'Hoy merecés calma.',
+  'Celebrá los pequeños logros.',
+  'Pedí ayuda cuando lo necesites.',
+]
+const hoyYYYYMMDD = new Date().toISOString().slice(0, 10)
+const fraseDelDia = frases[
+  [...hoyYYYYMMDD].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % frases.length
+]
+
+/* ========= Guardar estado de ánimo ========= */
+async function setMood(mood: 'triste' | 'normal' | 'bien' | 'muybien') {
+  if (!auth.user) return
+  const { error } = await supabase
+    .from('moods')
+    .upsert(
+      {
+        user_id: auth.user.id,
+        on_date: hoyYYYYMMDD,
+        mood,
+        note: null,
+      },
+      { onConflict: 'user_id,on_date' }
+    )
+  if (error) console.error('No se pudo guardar el estado de ánimo:', error)
+}
+
+/* ========= Calendario del mes ========= */
+const today = new Date()
+const monthName = today.toLocaleString('es-AR', { month: 'long' })
+const weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+
+const first = new Date(today.getFullYear(), today.getMonth(), 1)
+const last = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+const jsWeekday = first.getDay()
+const mondayBased = (jsWeekday + 6) % 7
+
+const leadingBlanks = mondayBased
+const daysInMonth = last.getDate()
+
+/* ========= Actividades de hoy ========= */
+type Appt = {
+  id: string
+  user_id: string
+  on_date: string
+  starts_at: string
+  title: string
+  place: string | null
+}
+const activities = ref<Appt[]>([])
+
+function formatTime(t: string) {
+  return t?.slice(0, 5) ?? ''
+}
+
+onMounted(async () => {
+  if (!auth.user) return
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id,user_id,on_date,starts_at,title,place')
+    .eq('user_id', auth.user.id)
+    .eq('on_date', hoyYYYYMMDD)
+    .order('starts_at', { ascending: true })
+
+  if (!error && data) activities.value = data as Appt[]
+})
+</script>
+
+<style scoped>
+/* Fondo general */
+.home-page {
+  background: #fff;
+  padding: 24px 18px 48px;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  gap: 24px;
+}
+@media (min-width: 1000px) {
   .grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-columns: 1.1fr 0.9fr;
+    max-width: 1100px;
+    margin: 0 auto;
   }
-  @media (min-width: 980px) {
-    .grid {
-      grid-template-columns: 1fr 1fr;
-      gap: 22px;
-    }
-  }
-  
-  .col {
-    display: grid;
-    gap: 18px;
-  }
-  
-  .card {
-    background: var(--card);
-    border-radius: 18px;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-    padding: 16px 18px;
-  }
-  
-  h3 {
-    margin: 2px 0 4px;
-    color: var(--text);
-    font-size: 1.4rem;
-  }
-  .subtle {
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-  
-  /* ========= Moods ========= */
-  .mood-row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(70px, 1fr));
-    gap: 14px;
-    margin-top: 10px;
-  }
-  
-  .mood {
-    background: #f5fbfb;
-    border: 2px solid transparent;
-    border-radius: 16px;
-    padding: 10px 8px;
-    display: grid;
-    place-items: center;
-    gap: 6px;
-    transition: 0.18s ease;
-  }
-  .mood[aria-pressed='true'] {
-    border-color: var(--nura-blue);
-    box-shadow: 0 6px 16px rgba(133, 182, 224, 0.25);
-  }
-  .mood img {
-    width: 56px;
-    height: 56px;
-    object-fit: contain;
-  }
-  .mood span {
-    font-size: 0.85rem;
-    color: var(--text);
-  }
-  
-  .saved {
-    margin-top: 8px;
-    color: var(--nura-emerald);
-    font-weight: 600;
-  }
-  
-  /* ========= Secciones ========= */
-  .section-title {
-    color: var(--nura-emerald);
-    margin: 0 0 8px;
-  }
-  
-  .quote {
-    background: #eef7f8;
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-weight: 600;
-    color: #2c4a4a;
-  }
-  
-  /* ========= Foro ========= */
-  .foro-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .down {
-    color: #9ca3af;
-  }
-  
-  .foro-list {
-    margin: 6px 0 12px 2px;
-    display: grid;
-    gap: 6px;
-    color: var(--text);
-  }
-  .foro-list small {
-    color: var(--muted);
-  }
-  
-  .btn-secondary {
-    display: inline-block;
-    padding: 9px 14px;
-    border-radius: 14px;
-    background: var(--nura-blue);
-    color: #fff;
-    text-align: center;
-    font-weight: 600;
-    box-shadow: 0 8px 20px rgba(133, 182, 224, 0.35);
-  }
-  
-  /* ========= Calendario + actividades ========= */
-  .calendar {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  
-  .calendar-head {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: end;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  .month {
-    color: #64748b;
-    font-weight: 700;
-    letter-spacing: 1px;
-  }
-  .day-big {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--nura-emerald);
-  }
-  
-  .activities {
-    display: grid;
-    gap: 10px;
-  }
-  .activity {
-    background: #f6fbfb;
-    border-radius: 12px;
-    padding: 10px 12px;
-    border: 1px solid #e6f1f1;
-  }
-  .activity .time {
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
-  .empty {
-    color: var(--muted);
-  }
-  
-  /* ========= Chatbot banner ========= */
-  .chatbot-banner {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-  }
-  .cb-text h5 {
-    margin: 0 0 6px;
-    color: var(--nura-emerald);
-    font-size: 1.1rem;
-  }
-  .cb-text p {
-    margin: 0;
-    color: var(--text);
-  }
-  .cb-nuri {
-    width: 100px;
-    height: auto;
-    object-fit: contain;
-  }
-  
-  /* ========= Footer ========= */
-  .footer {
-    text-align: center;
-    color: #94a3b8;
-    margin-top: 26px;
-  }
-  </style>
-  
+}
+
+.col {
+  display: grid;
+  gap: 20px;
+}
+
+/* Cards */
+.card {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+  padding: 18px 18px 20px;
+}
+
+/* Títulos */
+h2 {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+}
+h3 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+.sub {
+  margin: 0 0 12px;
+  color: #000;
+  opacity: 0.8;
+}
+
+/* Moods */
+.moods {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(70px, 1fr));
+  gap: 14px;
+}
+.mood {
+  background: #fff;
+  border: 1px solid #e8eef3;
+  border-radius: 16px;
+  padding: 10px 8px;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.05s ease;
+}
+.mood:hover {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+.mood img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.mood span {
+  font-size: 0.9rem;
+  color: #000;
+}
+
+/* Frase */
+.quote {
+  background: #f6fbff;
+  border: 1px solid #e8eef3;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+/* Foro */
+.foro-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #50bdbd;
+}
+.foro-list {
+  margin: 10px 0 16px 18px;
+}
+.foro-list li {
+  margin: 6px 0;
+}
+.foro-list small {
+  opacity: 0.7;
+}
+.btn-outline {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #85b6e0;
+  color: #2d2d2d;
+}
+
+/* Calendario */
+.calendar {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.cal-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.month {
+  letter-spacing: 1px;
+  color: #000;
+}
+
+.day-big {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #000;
+  line-height: 1;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 6px;
+}
+
+.wd {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  text-align: center;
+}
+
+.blank {
+  border: 1px solid #e8eef3;
+  background: #fff;
+  border-radius: 8px;
+  height: 32px;
+  opacity: 0.35;
+}
+
+.cal-day {
+  border: 1px solid #e8eef3;
+  background: #fff;
+  border-radius: 8px;
+  height: 32px;
+  font-size: 0.9rem;
+  display: grid;
+  place-items: center;
+  color: #2d2d2d;
+}
+
+.cal-day.today {
+  border-color: #50bdbd;
+  box-shadow: 0 0 0 2px rgba(80, 189, 189, 0.15) inset;
+}
+
+/* Lista actividades */
+.act-list {
+  margin-top: 6px;
+  display: grid;
+  gap: 8px;
+}
+.act-list li {
+  list-style: none;
+}
+.act-list strong {
+  color: #000;
+}
+.act-list small {
+  opacity: 0.7;
+}
+.empty {
+  margin: 6px 0 0;
+  opacity: 0.75;
+}
+
+/* Chatbot Banner */
+.chatbot-card {
+  display: block;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.chatbot-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+}
+</style>
