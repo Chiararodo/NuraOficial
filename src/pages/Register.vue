@@ -66,17 +66,17 @@
         <button class="cta" type="submit" :disabled="loading">
           {{ loading ? 'Creando…' : 'Crear Cuenta' }}
         </button>
-  
-        <button class="link-btn" type="button" @click="goLogin">
-          ¿Ya tenés cuenta? Iniciá sesión
-        </button>
       </form>
     </section>
+      <RouterLink to="/login" class="link-btn" role="button">
+    ¿Ya tenés cuenta? Iniciá sesión
+  </RouterLink>
   </template>
   
   <script setup lang="ts">
   import { ref, computed } from 'vue'
   import { useRouter } from 'vue-router'
+  import { RouterLink } from 'vue-router'
   import { useAuthStore } from '@/store/auth'
   
   const router = useRouter()

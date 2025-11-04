@@ -59,57 +59,58 @@
     </section>
   </template>
   
-  <script setup lang="ts">
-  import { ref } from 'vue'
-  import { useRouter } from 'vue-router'
-  import { useAuthStore } from '@/store/auth'
-  import InstallButton from '@/components/InstallButton.vue'
-  
-  const email = ref('')
-  const password = ref('')
-  
-  const auth = useAuthStore()
-  const router = useRouter()
-  
-  async function emailLogin() {
-    await auth.signInEmail(email.value, password.value)
-    router.replace('/onboarding')
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/auth'
+import InstallButton from '@/components/InstallButton.vue'
+
+const email = ref('')
+const password = ref('')
+
+const auth = useAuthStore()
+const router = useRouter()
+
+async function emailLogin() {
+  await auth.signInEmail(email.value, password.value)
+  router.replace('/onboarding')
+}
+
+async function google() {
+  await auth.signInWithProvider('google')
+}
+
+async function facebook() {
+  if (typeof (auth as any).signInWithProvider === 'function') {
+    await auth.signInWithProvider('facebook')
+  } else {
+    alert('Activamos Facebook cuando conectemos el proveedor en Supabase.')
   }
-  
-  async function register() {
-    await auth.signUpEmail(email.value, password.value)
-    router.replace('/onboarding')
-  }
-  
-  async function google() {
-    await auth.signInWithProvider('google')
-  }
-  
-  async function facebook() {
-    if (typeof (auth as any).signInWithProvider === 'function') {
-      await auth.signInWithProvider('facebook')
+}
+
+// 🔹 ahora el botón de “Registrarse” solo redirige a la pantalla de registro
+function register() {
+  router.push('/register')
+}
+
+// Recuperar contraseña (lo integramos con Supabase más tarde)
+async function forgot() {
+  try {
+    if (typeof (auth as any).resetPasswordForEmail === 'function') {
+      await (auth as any).resetPasswordForEmail(email.value)
+      alert('Te enviamos un correo para recuperar tu contraseña.')
+    } else if (typeof (auth as any).resetPassword === 'function') {
+      await (auth as any).resetPassword(email.value)
+      alert('Te enviamos un correo para recuperar tu contraseña.')
     } else {
-      alert('Activamos Facebook cuando conectemos el proveedor en Supabase.')
+      alert('Ingresá tu email y luego lo conectamos con Supabase.')
     }
+  } catch {
+    alert('No pudimos enviar el correo. Revisá el email e intentá nuevamente.')
   }
-  
-  // Recuperar contraseña (lo integramos con Supabase más tarde)
-  async function forgot() {
-    try {
-      if (typeof (auth as any).resetPasswordForEmail === 'function') {
-        await (auth as any).resetPasswordForEmail(email.value)
-        alert('Te enviamos un correo para recuperar tu contraseña.')
-      } else if (typeof (auth as any).resetPassword === 'function') {
-        await (auth as any).resetPassword(email.value)
-        alert('Te enviamos un correo para recuperar tu contraseña.')
-      } else {
-        alert('Ingresá tu email y luego lo conectamos con Supabase.')
-      }
-    } catch {
-      alert('No pudimos enviar el correo. Revisá el email e intentá nuevamente.')
-    }
-  }
-  </script>
+}
+</script>
+
   
   <style scoped>
   /* ===== Fondo (igual al splash) ===== */
