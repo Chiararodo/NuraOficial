@@ -190,7 +190,7 @@ function goRecent() {
 .wd{ text-align:center; font-size:.75rem; opacity:.6; }
 .blank{ height:36px; }
 .cal-day{
-  height:36px; border-radius:10px; border:1px solid #e8eef3;
+  color: black; height:36px; border-radius:10px; border:1px solid #e8eef3;
   background:#fff; display:grid; place-items:center; cursor:pointer;
 }
 .cal-day.today{ box-shadow:0 0 0 2px rgba(80,189,189,.15) inset; border-color:#50bdbd; }

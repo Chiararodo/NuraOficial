@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import { supabase } from '@/composables/useSupabase'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -13,6 +14,9 @@ const displayName = computed(() => {
   const email = auth.user?.email ?? 'Usuario'
   return email.split('@')[0]
 })
+
+/** Email del usuario */
+const userEmail = computed(() => auth.user?.email ?? 'Sin email registrado')
 
 /** “Usuario desde …” */
 const memberSince = computed(() => {
@@ -31,7 +35,7 @@ function editarMedicacion() { alert('Abriremos el editor de medicaciones.') }
 function verEstados()       { alert('Próximamente: gráfico de estados de los últimos 7 días.') }
 function verTurnos()        { goAgendar() }
 
-// ✅ ahora lleva a la página del diario
+// Diario
 function goDiaryList() {
   router.push({ name: 'diario', query: { view: 'recent' } })
 }
@@ -41,6 +45,23 @@ function escribirDiario() {
 
 function editarPrivacidad() { alert('Mostraremos la política y opciones de privacidad.') }
 function editarIdioma()     { alert('Próximamente: selector de idioma.') }
+
+/** ✅ Cerrar sesión */
+async function signOut() {
+  const ok = confirm('¿Cerrar sesión en Nura?')
+  if (!ok) return
+
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    alert('No se pudo cerrar sesión. Intentá de nuevo.')
+    console.error(error)
+    return
+  }
+
+  try { auth.$reset?.() } catch {}
+
+  router.replace('/login')
+}
 </script>
 
 <template>
@@ -53,11 +74,12 @@ function editarIdioma()     { alert('Próximamente: selector de idioma.') }
           <div class="avatar"></div>
           <div class="who">
             <h1 class="name">{{ displayName }}</h1>
+            <p class="email">{{ userEmail }}</p>
             <p class="since">{{ memberSince }}</p>
           </div>
         </div>
 
-        <!-- Estados -->
+        <!-- Mis estados -->
         <div class="card">
           <h3 class="card-title">Mis estados</h3>
           <p class="card-sub">estos últimos 7 días</p>
@@ -133,6 +155,15 @@ function editarIdioma()     { alert('Próximamente: selector de idioma.') }
             <button class="btn" @click="goChatbot">Abrir chatbot</button>
           </div>
         </div>
+
+        <!-- ✅ Cuenta -->
+        <div class="card">
+          <h4 class="card-title">Cuenta</h4>
+          <p class="muted">Gestioná tu sesión en este dispositivo.</p>
+          <div class="row end">
+            <button class="btn btn-danger" @click="signOut">Cerrar sesión</button>
+          </div>
+        </div>
       </section>
     </div>
   </main>
@@ -158,6 +189,7 @@ function editarIdioma()     { alert('Próximamente: selector de idioma.') }
   padding:16px 18px;
 }
 
+/* Header de perfil */
 .profile-head{ display:flex; align-items:center; gap:14px; }
 .avatar{
   width:64px; height:64px; border-radius:999px;
@@ -165,18 +197,22 @@ function editarIdioma()     { alert('Próximamente: selector de idioma.') }
   border:2px solid #e8eef4;
 }
 .who .name{ margin:0; font-size:1.1rem; color:#223; font-weight:700; }
-.who .since{ margin:2px 0 0; color:#6b7280; font-size:.9rem; }
+.who .email{ margin:2px 0 0; color:#4b5563; font-size:.9rem; }
+.who .since{ margin:2px 0 0; color:#6b7280; font-size:.85rem; }
 
+/* Filas */
 .row{ display:flex; gap:10px; align-items:center; margin-top:8px; }
 .row.between{ justify-content:space-between; }
 .row.end{ justify-content:flex-end; }
 .stack{ flex-wrap:wrap; }
 
+/* Tipografía */
 .card-title{ margin:0 0 6px; color:#273845; font-weight:700; }
 .aside-title{ margin:0; color:#3aa; font-weight:800; }
 .card-sub{ margin:-4px 0 10px; color:#6b7280; }
 .muted{ color:#6b7280; }
 
+/* Botones */
 .btn{
   background:#85b6e0; color:#fff;
   border:none; border-radius:12px;
@@ -194,5 +230,9 @@ function editarIdioma()     { alert('Próximamente: selector de idioma.') }
 }
 .btn-ghost .chev{ margin-left:8px; opacity:.6; }
 
-.col:nth-child(2) .card{ padding-top:14px; }
+/* Botón de cierre de sesión */
+.btn-danger{
+  background:#ef5350;
+  box-shadow:0 6px 14px rgba(239,83,80,.25);
+}
 </style>

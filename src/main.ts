@@ -1,12 +1,21 @@
-import './style.css'
+// src/main.ts
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { router } from '@/router'
 import App from './App.vue'
+import { router } from './router'
+import { useAuthStore } from '@/store/auth'
 import './style.css'
 
+const bootstrap = async () => {
+  const app = createApp(App)
+  app.use(createPinia())
 
-const app = createApp(App)
-app.use(createPinia())
-app.use(router)
-app.mount('#app')
+  // ⚠️ Importante: hidratar sesión ANTES de usar el router
+  const auth = useAuthStore()
+  await auth.initAuth()
+
+  app.use(router)
+  app.mount('#app')
+}
+
+bootstrap()

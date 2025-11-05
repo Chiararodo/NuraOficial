@@ -4,18 +4,17 @@
       <h2>¡Bienvenida/o a Nura!</h2>
 
       <p class="intro">
-        Yo soy Nuri y estoy acá para acompañarte y ayudarte, un día a la vez, con vos a cada paso.
+        Soy Nuri y estoy acá para acompañarte un día a la vez, a tu ritmo.
       </p>
 
-      <!-- Imagen de Nuri -->
+      <!-- Imagen -->
       <img src="/icons/NuriBienvenida.png" alt="Nuri" class="nuri" />
 
       <p class="text">
         Registrá cómo te sentís y accedé a recursos confiables.
       </p>
 
-      <!-- Botón continuar -->
-    <button class="btn" @click="goNext">Continuar</button>
+      <button class="btn" @click="goNext">Continuar</button>
     </section>
   </main>
 </template>
@@ -29,25 +28,21 @@ function goNext() {
 </script>
 
 <style scoped>
-/* ===== Fondo general ===== */
 .onboarding {
   min-height: 100dvh;
   background: url('/bgs/onboarding.png') center/cover no-repeat;
   display: flex;
   justify-content: center;
   padding: 24px;
+  animation: fadeIn 0.6s ease-in forwards;
 }
 
-/* ===== Contenedor del contenido ===== */
 .ob {
   max-width: 500px;
-  background: #fff;
-  padding: 15px 28px;
+  padding: 32px 28px;
   text-align: center;
-  max-height: 500px;
 }
 
-/* ===== Textos ===== */
 h2 {
   color: #50bdbd;
   font-size: 1.6rem;
@@ -67,16 +62,14 @@ h2 {
   color: #333;
 }
 
-/* ===== Imagen de Nuri ===== */
 .nuri {
-  width: 250px;
+  width: 240px;
   height: auto;
-  margin: 0 auto 50px;
+  margin: 0 auto 40px;
   display: block;
 }
 
-/* ===== Botón ===== */
-button {
+.btn {
   background: #85b6e0;
   color: #fff;
   border: none;
@@ -88,9 +81,14 @@ button {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   transition: all 0.25s ease;
 }
-
-button:hover {
+.btn:hover {
   background: #50bdbd;
   transform: translateY(-2px);
+}
+
+/* Animación entrada */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
