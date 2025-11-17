@@ -50,10 +50,30 @@
   .logo-link{ display:flex; align-items:center; }
   .logo{ height: 38px; width: auto; }
   
-  /* Nav desktop */
-  .topnav{ display:flex; gap:26px; font-weight:500; }
-  .topnav a{ color:#fff; text-decoration:none; font-size:1rem; }
-  .topnav a:hover{ text-decoration:underline; }
+/* Nav desktop */
+.topnav{ 
+  display:flex; 
+  gap:26px; 
+  font-weight:500; 
+}
+
+.topnav a{ 
+  color:#fff; 
+  text-decoration:none; 
+  font-size:1rem; 
+}
+
+.topnav a:hover{ 
+  text-decoration:underline; 
+}
+
+/* Estado activo */
+.topnav a.router-link-active,
+.topnav a.router-link-exact-active {
+  color:#633266;
+  text-decoration:none;
+}
+
   
   /* Acciones (logo + iconos siempre visibles) */
   .header-actions{
