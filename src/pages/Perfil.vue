@@ -7,35 +7,43 @@ import { supabase } from '@/composables/useSupabase'
 const router = useRouter()
 const auth = useAuthStore()
 
-/** Nombre visible del usuario */
-const displayName = computed(() => {
-  const metaName = (auth.user?.user_metadata as any)?.name
-  if (metaName) return metaName
+/** =============================
+ *   Datos del usuario
+ *  ============================= */
+
+const profileName = computed(() => {
+  const name = (auth.user?.user_metadata as any)?.name
+  if (name && name.trim() !== '') return name
   const email = auth.user?.email ?? 'Usuario'
   return email.split('@')[0]
 })
 
-/** Email del usuario */
 const userEmail = computed(() => auth.user?.email ?? 'Sin email registrado')
 
-/** “Usuario desde …” */
+const avatarUrl = computed(() =>
+  (auth.user?.user_metadata as any)?.avatar_url ||
+  '/icons/default-avatar.png'
+)
+
 const memberSince = computed(() => {
   const iso = auth.user?.created_at
   if (!iso) return `Usuario desde ${new Date().getFullYear()}`
-  const y = new Date(iso).getFullYear()
-  return `Usuario desde ${y}`
+  return `Usuario desde ${new Date(iso).getFullYear()}`
 })
 
-/** Navegación y acciones */
-function goNotificaciones() { router.push('/app/notificaciones') }
-function goChatbot()        { router.push('/app/chatbot') }
-function goAgendar()        { router.push('/app/agendar') }
-function goContenido()      { router.push('/app/contenido') }
-function editarMedicacion() { alert('Abriremos el editor de medicaciones.') }
-function verEstados()       { alert('Próximamente: gráfico de estados de los últimos 7 días.') }
-function verTurnos()        { goAgendar() }
+/** Navegación */
+function goEditarPerfil() {
+  router.push('/app/perfil/editar')
+}
 
-// Diario
+function goNotificaciones() { router.push('/app/notificaciones') }
+function goChatbot() { router.push('/app/chatbot') }
+function goAgendar() { router.push('/app/agendar') }
+function goContenido() { router.push('/app/contenido') }
+function editarMedicacion() { alert('Abriremos el editor de medicaciones.') }
+function verEstados() { alert('Próximamente: gráfico de estados de los últimos 7 días.') }
+function verTurnos() { goAgendar() }
+
 function goDiaryList() {
   router.push({ name: 'diario', query: { view: 'recent' } })
 }
@@ -44,9 +52,9 @@ function escribirDiario() {
 }
 
 function editarPrivacidad() { alert('Mostraremos la política y opciones de privacidad.') }
-function editarIdioma()     { alert('Próximamente: selector de idioma.') }
+function editarIdioma() { alert('Próximamente: selector de idioma.') }
 
-/** ✅ Cerrar sesión */
+/** Cerrar sesión */
 async function signOut() {
   const ok = confirm('¿Cerrar sesión en Nura?')
   if (!ok) return
@@ -69,13 +77,20 @@ async function signOut() {
     <div class="grid">
       <!-- COLUMNA IZQUIERDA -->
       <section class="col">
-        <!-- Encabezado -->
+        <!-- Encabezado de perfil -->
         <div class="card profile-head">
-          <div class="avatar"></div>
+          <div class="avatar-container">
+            <img :src="avatarUrl" alt="avatar" class="avatar-img" />
+          </div>
+
           <div class="who">
-            <h1 class="name">{{ displayName }}</h1>
+            <h1 class="name">{{ profileName }}</h1>
             <p class="email">{{ userEmail }}</p>
             <p class="since">{{ memberSince }}</p>
+
+            <button class="btn edit-btn" @click="goEditarPerfil">
+              Editar perfil
+            </button>
           </div>
         </div>
 
@@ -156,7 +171,7 @@ async function signOut() {
           </div>
         </div>
 
-        <!-- ✅ Cuenta -->
+        <!-- Cuenta -->
         <div class="card">
           <h4 class="card-title">Cuenta</h4>
           <p class="muted">Gestioná tu sesión en este dispositivo.</p>
@@ -189,16 +204,32 @@ async function signOut() {
   padding:16px 18px;
 }
 
-/* Header de perfil */
-.profile-head{ display:flex; align-items:center; gap:14px; }
-.avatar{
-  width:64px; height:64px; border-radius:999px;
-  background:linear-gradient(145deg,#e6e9f1,#f9fbff);
-  border:2px solid #e8eef4;
+/* Perfil */
+.profile-head{
+  display:flex; align-items:center; gap:14px;
 }
-.who .name{ margin:0; font-size:1.1rem; color:#223; font-weight:700; }
-.who .email{ margin:2px 0 0; color:#4b5563; font-size:.9rem; }
-.who .since{ margin:2px 0 0; color:#6b7280; font-size:.85rem; }
+
+.avatar-container{
+  width:70px; height:70px; border-radius:999px;
+  overflow:hidden; background:#d8f0ec;
+  border:2px solid #e5edf2;
+  flex-shrink:0;
+}
+
+.avatar-img{
+  width:100%; height:100%; object-fit:cover;
+}
+
+.name{ margin:0; font-size:1.2rem; color:#223; font-weight:700; }
+.email{ margin:2px 0 0; color:#4b5563; font-size:.95rem; }
+.since{ margin:2px 0 6px; color:#6b7280; font-size:.85rem; }
+
+.edit-btn{
+  margin-top:6px;
+  background:#50bdbd; color:white;
+  border:none; border-radius:12px;
+  padding:.4rem .9rem; font-weight:600; cursor:pointer;
+}
 
 /* Filas */
 .row{ display:flex; gap:10px; align-items:center; margin-top:8px; }
@@ -218,21 +249,14 @@ async function signOut() {
   border:none; border-radius:12px;
   padding:.45rem .9rem; font-weight:600; cursor:pointer;
   box-shadow:0 6px 14px rgba(133,182,224,.35);
-  transition:transform .05s ease, filter .15s ease;
 }
-.btn:hover{ filter:brightness(.98); }
-.btn:active{ transform:translateY(1px); }
-
-.btn-ghost{
-  background:#f5f9ff; color:#2b3a44;
-  border:1px solid #e3ecf6; border-radius:12px;
-  padding:.45rem .8rem; font-weight:600; cursor:pointer;
-}
-.btn-ghost .chev{ margin-left:8px; opacity:.6; }
-
-/* Botón de cierre de sesión */
 .btn-danger{
   background:#ef5350;
   box-shadow:0 6px 14px rgba(239,83,80,.25);
+}
+.btn-ghost{
+  background:#f5f9ff; color:#2b3a44;
+  border:1px solid #e3ecf6; border-radius:12px;
+  padding:.45rem .8rem; font-weight:600;
 }
 </style>

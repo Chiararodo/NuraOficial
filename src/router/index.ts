@@ -16,6 +16,8 @@ import Agendar from '@/pages/Agendar.vue'
 import Contenido from '@/pages/Contenido.vue'
 import Perfil from '@/pages/Perfil.vue'
 import Foro from '@/pages/Foro.vue'
+import ForoNuevo from '@/pages/ForoNuevo.vue'
+import ForoVer from '@/pages/ForoVer.vue'
 import Chatbot from '@/pages/Chatbot.vue'
 import Notificaciones from '@/pages/Notificaciones.vue'
 import Diary from '@/pages/Diary.vue'
@@ -45,7 +47,10 @@ const routes: RouteRecordRaw[] = [
       { path: 'agendar',        name: 'agendar',        component: Agendar },
       { path: 'contenido',      name: 'contenido',      component: Contenido },
       { path: 'perfil',         name: 'perfil',         component: Perfil },
+      { path: 'perfil/editar', name: 'perfil-editar', component: () => import('@/pages/PerfilEditar.vue') },
       { path: 'foro',           name: 'foro',           component: Foro },
+      { path: 'foro/new',       name: 'foro-new',       component: ForoNuevo },
+      { path: 'foro/:id',     name: 'foro-view',  component: ForoVer },
       { path: 'chatbot',        name: 'chatbot',        component: Chatbot },
       { path: 'notificaciones', name: 'notificaciones', component: Notificaciones },
       { path: 'diario',         name: 'diario',         component: Diary },
