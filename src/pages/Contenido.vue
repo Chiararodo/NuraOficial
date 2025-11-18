@@ -29,7 +29,9 @@
         >
           <div class="thumb">
             <img :src="publicUrl(v.cover_path)" :alt="v.title" />
-            <span class="duration" v-if="v.duration_seconds">{{ mmss(v.duration_seconds) }}</span>
+            <span class="duration" v-if="v.duration_seconds">
+              {{ mmss(v.duration_seconds) }}
+            </span>
           </div>
           <h3 class="title">{{ v.title }}</h3>
         </article>
@@ -90,7 +92,10 @@
             <div class="guide-actions">
               <button class="btn" @click.stop="openGuide(g)">Continuar</button>
               <div class="progress" v-if="progressMap.get(g.id) !== undefined">
-                <div class="bar" :style="{ width: (progressMap.get(g.id) ?? 0) + '%' }"></div>
+                <div
+                  class="bar"
+                  :style="{ width: (progressMap.get(g.id) ?? 0) + '%' }"
+                ></div>
               </div>
               <small class="pct" v-if="progressMap.get(g.id) !== undefined">
                 {{ progressMap.get(g.id) }}%
@@ -101,29 +106,41 @@
       </div>
     </section>
 
-    <!-- MODAL VIDEO -->
-    <dialog ref="videoDlg" class="modal" @close="currentVideo = null">
-      <div v-if="currentVideo" class="modal-card">
-        <button class="close" @click="videoDlg?.close()">×</button>
+    <!-- OVERLAY VIDEO -->
+    <div
+      v-if="currentVideo"
+      class="overlay"
+      
+    >
+      <div class="modal-card">
+        <button type="button" class="close" @click="closeVideo">×</button>
         <div class="player">
           <video v-if="videoSrc" :src="videoSrc" controls playsinline></video>
         </div>
         <h3 class="modal-title">{{ currentVideo?.title }}</h3>
-        <p class="modal-desc" v-if="currentVideo?.description">{{ currentVideo?.description }}</p>
+        <p class="modal-desc" v-if="currentVideo?.description">
+          {{ currentVideo?.description }}
+        </p>
       </div>
-    </dialog>
+    </div>
 
-    <!-- MODAL PDF (Libros / Guías) -->
-    <dialog ref="pdfDlg" class="modal" @close="currentPdf = null">
-      <div v-if="currentPdf" class="modal-card">
-        <button class="close" @click="pdfDlg?.close()">×</button>
+    <!-- OVERLAY PDF (Libros / Guías) -->
+    <div
+      v-if="currentPdf"
+      class="overlay"
+      @click.self="closePdf"
+    >
+      <div class="modal-card">
+        <button type="button" class="close" @click="closePdf">×</button>
         <h3 class="modal-title">{{ currentPdf?.title }}</h3>
-        <p class="modal-desc" v-if="currentPdf?.description">{{ currentPdf?.description }}</p>
+        <p class="modal-desc" v-if="currentPdf?.description">
+          {{ currentPdf?.description }}
+        </p>
         <div class="pdf">
           <iframe v-if="pdfSrc" :src="pdfSrc" title="Documento"></iframe>
         </div>
       </div>
-    </dialog>
+    </div>
   </main>
 </template>
 
@@ -137,7 +154,7 @@ const TABS = [
   { key: 'biblioteca', label: 'Bibliotecas' },
   { key: 'guias', label: 'Guías' },
 ] as const
-type TabKey = typeof TABS[number]['key']
+type TabKey = (typeof TABS)[number]['key']
 const tab = ref<TabKey>('videos')
 
 type VideoRow = {
@@ -179,14 +196,12 @@ const auth = useAuthStore()
 const progressMap = ref<Map<string, number>>(new Map())
 
 const BUCKET = 'nura-content'
+
 function publicUrl(path?: string | null) {
   if (!path) return ''
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
 }
-async function signedUrl(path: string, expSeconds = 60 * 60 * 12) {
-  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, expSeconds)
-  return data?.signedUrl ?? ''
-}
+
 
 async function loadVideos() {
   loading.value.videos = true
@@ -201,7 +216,7 @@ async function loadVideos() {
 async function loadBooksAndArticles() {
   loading.value.books = true
   const { data: b } = await supabase
-    .from('books') // si tu tabla se llama library_items, cambiá este nombre
+    .from('books')
     .select('id,title,cover_path,file_path')
     .order('created_at', { ascending: false })
   books.value = (b as BookRow[]) || []
@@ -229,35 +244,47 @@ async function loadGuides() {
       .from('guide_progress')
       .select('guide_id, percent')
       .eq('user_id', auth.user.id)
-    progressMap.value = new Map((p as any[] | null)?.map(r => [r.guide_id, r.percent]) ?? [])
+    progressMap.value = new Map(
+      ((p as any[] | null) ?? []).map((r) => [r.guide_id, r.percent]),
+    )
   }
   loading.value.guides = false
 }
 
-const videoDlg = ref<HTMLDialogElement | null>(null)
+/* ---------- VIDEO OVERLAY ---------- */
 const currentVideo = ref<VideoRow | null>(null)
 const videoSrc = ref('')
 
 async function openVideo(v: VideoRow) {
   currentVideo.value = v
-  videoSrc.value = publicUrl(v.file_path) || await signedUrl(v.file_path)
-  videoDlg.value?.showModal()
+
+  videoSrc.value = publicUrl(v.file_path)
 }
 
-const pdfDlg = ref<HTMLDialogElement | null>(null)
-const currentPdf = ref<{ title: string; description?: string | null } | null>(null)
+function closeVideo() {
+  currentVideo.value = null
+  videoSrc.value = ''
+}
+
+/* ---------- PDF OVERLAY (Libros / Guías) ---------- */
+const currentPdf = ref<{ title: string; description?: string | null } | null>(
+  null,
+)
 const pdfSrc = ref('')
 
 async function openBook(b: BookRow) {
   currentPdf.value = { title: b.title }
-  pdfSrc.value = publicUrl(b.file_path) || await signedUrl(b.file_path)
-  pdfDlg.value?.showModal()
+  pdfSrc.value = publicUrl(b.file_path)
 }
 
 async function openGuide(g: GuideRow) {
   currentPdf.value = { title: g.title, description: g.description }
-  pdfSrc.value = publicUrl(g.file_path) || await signedUrl(g.file_path)
-  pdfDlg.value?.showModal()
+  pdfSrc.value = publicUrl(g.file_path)
+}
+
+function closePdf() {
+  currentPdf.value = null
+  pdfSrc.value = ''
 }
 
 onMounted(async () => {
@@ -282,8 +309,15 @@ function mmss(total: number) {
 }
 
 /* Head + Tabs */
-.page-head { display: grid; gap: 15px; margin-bottom: 12px; }
-h2 { margin: 0; padding: 10px; }
+.page-head {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 12px;
+}
+h2 {
+  margin: 0;
+  padding: 10px;
+}
 
 .tabs {
   display: flex;
@@ -295,7 +329,7 @@ h2 { margin: 0; padding: 10px; }
 .tab {
   padding: 10px 18px;
   border-radius: 999px;
-  background: #85B6E0;
+  background: #85b6e0;
   border: none;
   color: #fff;
   font-weight: 500;
@@ -324,10 +358,13 @@ h2 { margin: 0; padding: 10px; }
 .card {
   background: #e4f3f3;
   border-radius: 18px;
-  box-shadow: 0 10px 26px rgba(0,0,0,.08);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
   padding: 12px;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 .card:hover {
   background: #f1fbfb;
@@ -336,63 +373,200 @@ h2 { margin: 0; padding: 10px; }
 }
 
 .video-card .thumb {
-  position: relative; border-radius: 14px; overflow: hidden; background: #f6fbff;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f6fbff;
   aspect-ratio: 16 / 9;
 }
-.video-card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.duration {
-  position: absolute; right: 8px; bottom: 8px;
-  font-size: .8rem; padding: 4px 6px; border-radius: 6px; background: rgba(0,0,0,.65); color: #fff;
+.video-card .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
-.title { margin: 10px 6px 6px; font-size: 1rem; }
+.duration {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+}
+.title {
+  margin: 10px 6px 6px;
+  font-size: 1rem;
+}
 
 /* Biblioteca */
 .book-card .book-thumb {
-  border-radius: 14px; overflow: hidden; background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
   aspect-ratio: 7 / 10;
-  display: grid; place-items: center;
+  display: grid;
+  place-items: center;
 }
 .book-card img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* Guías */
-.guide-card { display: grid; grid-template-rows: auto 1fr; gap: 12px; }
-.guide-thumb { border-radius: 14px; overflow: hidden; aspect-ratio: 7 / 10; background: #fff; }
-.guide-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.guide-title { margin: 0 6px 4px; }
-.guide-summary { margin: 0 6px 8px; opacity: .9; }
+.guide-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+}
+.guide-thumb {
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 7 / 10;
+  background: #fff;
+}
+.guide-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.guide-title {
+  margin: 0 6px 4px;
+}
+.guide-summary {
+  margin: 0 6px 8px;
+  opacity: 0.9;
+}
 
 .guide-actions {
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
   padding: 0 6px 6px;
 }
-.btn { padding: 8px 12px; border-radius: 999px; background: #50bdbd; color: #fff; border: none; }
-.progress { height: 10px; background: #e8eef3; border-radius: 999px; overflow: hidden; }
-.progress .bar { height: 100%; background: #85b6e0; }
-.pct { opacity: .8; }
-
-.section { display: grid; gap: 14px; }
-
-.articles { display: grid; gap: 12px; }
-.article-card {
-  display: grid; grid-template-columns: 96px 1fr; gap: 12px;
-  padding: 12px; border-radius: 14px; background: #eaf6ff; border: 1px solid #e0edf5;
+.btn {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #50bdbd;
+  color: #fff;
+  border: none;
 }
-.art-cover { width: 96px; height: 96px; object-fit: cover; border-radius: 10px; }
-.art-title { margin: 0 0 4px; }
-.art-summary { margin: 0 0 4px; opacity: .85; }
+.progress {
+  height: 10px;
+  background: #e8eef3;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress .bar {
+  height: 100%;
+  background: #85b6e0;
+}
+.pct {
+  opacity: 0.8;
+}
 
-.loading, .empty { opacity: .75; }
+.section {
+  display: grid;
+  gap: 14px;
+}
 
-.modal::backdrop { background: rgba(0,0,0,.35); }
-.modal { border: none; padding: 0; border-radius: 18px; width: min(900px, 96vw); }
-.modal-card { position: relative; background: #fff; border-radius: 18px; overflow: hidden; }
-.close { position: absolute; right: 8px; top: 6px; font-size: 24px; background: red; border: none; cursor: pointer; }
-.player { background: #000; }
-.player video { width: 100%; height: auto; display: block; }
-.modal-title { margin: 12px 14px 4px; }
-.modal-desc  { margin: 0 14px 14px; opacity: .9; }
-.pdf { height: 70vh; }
-.pdf iframe { width: 100%; height: 100%; border: 0; }
+.articles {
+  display: grid;
+  gap: 12px;
+}
+.article-card {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #eaf6ff;
+  border: 1px solid #e0edf5;
+}
+.art-cover {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.art-title {
+  margin: 0 0 4px;
+}
+.art-summary {
+  margin: 0 0 4px;
+  opacity: 0.85;
+}
+
+.loading,
+.empty {
+  opacity: 0.75;
+}
+
+/* Overlay genérico para video y PDF */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+/* Contenido del modal */
+.modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  width: min(900px, 96vw);
+}
+
+.close {
+  z-index: 20;
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  font-size: 22px;
+  background: red;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+}
+
+.player {
+  background: #000;
+}
+.player video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.modal-title {
+  margin: 12px 14px 4px;
+}
+.modal-desc {
+  margin: 0 14px 14px;
+  opacity: 0.9;
+}
+
+.pdf {
+  height: 70vh;
+}
+.pdf iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
 </style>

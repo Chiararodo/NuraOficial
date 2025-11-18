@@ -1,16 +1,8 @@
-<!-- src/pages/ForoVer.vue -->
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '@/composables/useSupabase'
 import { useAuthStore } from '@/store/auth'
-
-/* ---------- Tipos ---------- */
-
-type ProfileMini = {
-  full_name: string | null
-  avatar_url: string | null
-}
 
 type ForumRow = {
   id: string
@@ -19,8 +11,6 @@ type ForumRow = {
   body: string | null
   category: string | null
   created_at: string
-  // join con profiles
-  profiles?: ProfileMini[] | ProfileMini | null
 }
 
 type CommentRow = {
@@ -29,24 +19,6 @@ type CommentRow = {
   user_id: string | null
   body: string
   created_at: string
-  // join con profiles
-  profiles?: ProfileMini[] | ProfileMini | null
-}
-
-/* ---------- Helpers para profiles ---------- */
-
-function extractProfile(p?: ProfileMini[] | ProfileMini | null): ProfileMini | null {
-  if (!p) return null
-  return Array.isArray(p) ? (p[0] ?? null) : p
-}
-
-function displayNameFromProfile(
-  p?: ProfileMini[] | ProfileMini | null,
-  fallback = 'Usuario'
-): string {
-  const prof = extractProfile(p)
-  if (prof?.full_name && prof.full_name.trim() !== '') return prof.full_name
-  return fallback
 }
 
 const route = useRoute()
@@ -55,8 +27,7 @@ const auth = useAuthStore()
 
 const forumId = computed(() => route.params.id as string)
 
-/* ---------- Estado ---------- */
-
+// Estado
 const forum = ref<ForumRow | null>(null)
 const comments = ref<CommentRow[]>([])
 const loadingForum = ref(true)
@@ -76,7 +47,6 @@ function goBack() {
 }
 
 /* ---------- Helpers de formato ---------- */
-
 function formatDateTime(iso: string) {
   const d = new Date(iso)
   return d.toLocaleString('es-AR', {
@@ -95,24 +65,39 @@ function formatTime(iso: string) {
   })
 }
 
-/** Nombre del autor del post principal */
+/** Nombre a mostrar para el autor del foro */
 const authorLabel = computed(() => {
   if (!forum.value) return 'Usuario'
-  return displayNameFromProfile(forum.value.profiles, 'Usuario')
+
+  // Si el post es del usuario logueado, mostramos su nombre real o mail
+  if (auth.user && forum.value.user_id === auth.user.id) {
+    const metaName = (auth.user.user_metadata as any)?.name
+    if (metaName) return metaName
+    if (auth.user.email) return auth.user.email.split('@')[0]
+  }
+
+  // Para otros usuarios (de momento) usamos un nombre genérico
+  return 'Usuario'
 })
 
-/* ---------- Carga post original con usuario ---------- */
+/** Nombre a mostrar para cada comentario */
+function displayNameForComment(c: CommentRow): string {
+  if (auth.user && c.user_id === auth.user.id) {
+    const metaName = (auth.user.user_metadata as any)?.name
+    if (metaName) return metaName
+    if (auth.user.email) return auth.user.email.split('@')[0]
+  }
+  return 'Usuario'
+}
 
+/* ---------- Carga post original ---------- */
 async function loadForum() {
   loadingForum.value = true
   errorMsg.value = ''
 
   const { data, error } = await supabase
     .from('forums')
-    .select(`
-      id, title, body, category, created_at, user_id,
-      profiles(full_name, avatar_url)
-    `)
+    .select('id,title,body,category,created_at,user_id')
     .eq('id', forumId.value)
     .maybeSingle()
 
@@ -120,37 +105,32 @@ async function loadForum() {
     console.error(error)
     errorMsg.value = 'No se encontró este foro.'
   } else {
-    forum.value = data as any as ForumRow
+    forum.value = data as ForumRow
   }
 
   loadingForum.value = false
 }
 
-/* ---------- Carga comentarios con usuario ---------- */
-
+/* ---------- Carga comentarios ---------- */
 async function loadComments() {
   loadingComments.value = true
 
   const { data, error } = await supabase
     .from('forum_comments')
-    .select(`
-      id, forum_id, user_id, body, created_at,
-      profiles(full_name, avatar_url)
-    `)
+    .select('id,forum_id,user_id,body,created_at')
     .eq('forum_id', forumId.value)
     .order('created_at', { ascending: true })
 
   if (error) {
     console.error(error)
-  } else if (data) {
-    comments.value = data as any as CommentRow[]
+  } else {
+    comments.value = (data ?? []) as CommentRow[]
   }
 
   loadingComments.value = false
 }
 
 /* ---------- Enviar comentario ---------- */
-
 async function sendComment() {
   if (!canSend.value) return
   sending.value = true
@@ -172,8 +152,6 @@ async function sendComment() {
     if (error) throw error
 
     if (data) {
-      // Lo agregamos localmente (sin profile por ahora;
-      // se verá como "Usuario" hasta recargar).
       comments.value = [...comments.value, data as CommentRow]
     }
 
@@ -187,7 +165,6 @@ async function sendComment() {
 }
 
 /* ---------- Realtime ---------- */
-
 let channel: ReturnType<typeof supabase.channel> | null = null
 
 function setupRealtime() {
@@ -273,9 +250,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="comment-body">
             <div class="comment-header">
-              <span class="name">
-                {{ displayNameFromProfile(c.profiles) }}
-              </span>
+              <span class="name">{{ displayNameForComment(c) }}</span>
               <span class="time">{{ formatTime(c.created_at) }}</span>
             </div>
             <p class="text">{{ c.body }}</p>
