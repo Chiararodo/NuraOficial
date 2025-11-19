@@ -42,3 +42,7 @@ desktop.ini
 *.njsproj
 *.sln
 *.sw?
+
+# Variables de entorno
+.env
+.env.*
