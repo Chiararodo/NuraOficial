@@ -3,8 +3,12 @@ import { ref, nextTick } from 'vue';
 
 const title = 'NuraBot';
 
-// Tipos
 type Sender = 'user' | 'bot';
+
+import nuraAvatar from "@/assets/nurabot.png";
+
+
+
 
 interface ChatMessage {
   id: number;
@@ -27,8 +31,6 @@ const loading = ref(false);
 const errorMsg = ref('');
 const chatContainer = ref<HTMLElement | null>(null);
 
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-
 // Scroll automático
 const scrollToBottom = async () => {
   await nextTick();
@@ -40,75 +42,166 @@ const scrollToBottom = async () => {
   }
 };
 
-// Llamada a OpenAI (Responses API)
-const askNuri = async (userText: string): Promise<string> => {
-  if (!apiKey) {
-    throw new Error(
-      'El chatbot no está configurado. Falta la API key de OpenAI en el archivo .env.local.'
+/**
+ * Genera una respuesta local de NuraBot sin usar APIs externas.
+ * Usa palabras clave para devolver mensajes cuidados y empáticos.
+ */
+ const generateLocalReply = (rawText: string): string => {
+  const text = rawText.toLowerCase();
+
+  // 🚨 Mensajes de mucho riesgo / autolesión
+  if (
+    text.includes('no quiero vivir') ||
+    text.includes('quitarme la vida') ||
+    text.includes('suicid') ||
+    text.includes('hacerme daño') ||
+    text.includes('lastimarme') ||
+    text.includes('hacerme mal')
+  ) {
+    return (
+      'Gracias por confiarme algo tan delicado 💜. Lo que estás sintiendo es muy importante y no tenés por qué atravesarlo sola. ' +
+      'En este momento, lo más seguro es que puedas hablar con alguien de confianza o con un servicio de ayuda inmediata en tu país. ' +
+      'Si podés, comunicate con los servicios de emergencia o con una línea de acompañamiento en crisis. Tu vida vale muchísimo y merecés recibir ayuda y cuidado ahora mismo. 🌙'
     );
   }
 
-  const history = messages.value
-    .map((m) => `${m.from === 'user' ? 'Persona' : 'Nuri'}: ${m.text}`)
-    .join('\n');
-
-  const prompt = `
-Eres Nuri, el chatbot de la app Nura, una plataforma de acompañamiento en salud mental y relación con la comida.
-Tu tono es:
-- Cercano, cálido, empático y sin juicios.
-- Claro y sencillo, como si hablaras con una persona joven.
-- Respetuoso con personas que atraviesan dificultades con la comida, la imagen corporal o el ánimo.
-
-MUY IMPORTANTE:
-- NO des diagnósticos ni planes de tratamiento.
-- NO des recomendaciones de calorías, ayunos extremos, dietas restrictivas ni conductas de riesgo.
-- Si la persona menciona ideas de hacerse daño, de dejar de comer por completo o de no querer seguir viviendo, RESPONDE SIEMPRE que es importante pedir ayuda urgente a un profesional de salud o a los servicios de emergencia de su país.
-- Reforzá siempre la idea de pedir ayuda a profesionales y personas de confianza.
-- Respondé en español rioplatense neutro.
-- Respondé en un máximo de 4–5 líneas.
-
-Historial de la conversación:
-${history}
-
-Mensaje nuevo de la persona usuaria:
-${userText}
-
-Ahora responde como Nuri:
-`;
-
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4.1-mini',
-      input: prompt,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error('Error OpenAI:', response.status, errorBody);
-    throw new Error('Hubo un problema al hablar con NuraBot. Probá de nuevo en un ratito.');
+  // Restricción fuerte / purga / conductas compensatorias
+  if (
+    text.includes('no quiero comer') ||
+    text.includes('no comer') ||
+    text.includes('vomitar') ||
+    text.includes('vomito') ||
+    text.includes('laxante') ||
+    text.includes('laxantes') ||
+    text.includes('ayuno') ||
+    text.includes('ayunar')
+  ) {
+    return (
+      'Entiendo que estos pensamientos y conductas pueden aparecer cuando hay mucho malestar alrededor de la comida o del cuerpo 💜. ' +
+      'NuraBot no puede indicar ni recomendar conductas que pongan en riesgo tu salud. Lo más amoroso con vos ahora es que puedas hablar de esto con un equipo de salud (nutri, psicó, médique) que tenga experiencia en TCA. ' +
+      'Si querés, podés contarme un poco qué sentís antes y después de estos momentos, así lo nombramos juntas y pensás a quién podrías pedirle ayuda en tu entorno. 🌱'
+    );
   }
 
-  const data = await response.json();
-  const content =
-    data?.output?.[0]?.content?.[0]?.text ??
-    'Estoy teniendo un problema para responder justo ahora, ¿te animás a intentarlo de nuevo?';
+  // Ansiedad / nervios / angustia
+  if (
+    text.includes('ansiedad') ||
+    text.includes('ansiosa') ||
+    text.includes('ataque de pánico') ||
+    text.includes('ataque de panico') ||
+    text.includes('nerviosa') ||
+    text.includes('angustia') ||
+    text.includes('crisis')
+  ) {
+    return (
+      'Siento que la ansiedad te esté acompañando así, puede sentirse muy abrumadora 💜. ' +
+      'Podés probar una pausa cortita: apoyá los pies en el piso, inhalá en 4 segundos, sostené 4 y exhalá en 6–8 mientras registrás 3 cosas que ves, 2 que escuchás y 1 que podés tocar. ' +
+      'Este tipo de recursos no reemplaza un tratamiento, pero puede ayudarte a atravesar el momento. Si la ansiedad aparece seguido, hablarlo con un profesional de salud mental puede ser un buen próximo paso para vos. 🌱'
+    );
+  }
 
-  return content.trim();
+  // Culpa, atracón, “comí de más”
+  if (
+    text.includes('atracón') ||
+    text.includes('atracon') ||
+    text.includes('comí de más') ||
+    text.includes('comi de mas') ||
+    text.includes('me pasé comiendo') ||
+    text.includes('me pase comiendo') ||
+    text.includes('culpa') ||
+    text.includes('vergüenza') ||
+    text.includes('verguenza')
+  ) {
+    return (
+      'Es muy comprensible que después de comer aparezcan culpa o vergüenza, pero lo que comés no define tu valor como persona 💜. ' +
+      'Puede ayudar mucho poner en palabras qué estabas viviendo antes de ese momento: emociones, situaciones, pensamientos. Muchas veces el atracón es una forma de intentar calmar algo que duele. ' +
+      'Hablar de esto con un equipo especializado en TCA o con alguien de confianza puede ser un paso muy valioso para empezar a estar más en paz con la comida y con vos misma. 🌙'
+    );
+  }
+
+  // Imagen corporal / peso / cuerpo
+  if (
+    text.includes('mi cuerpo') ||
+    text.includes('mi peso') ||
+    text.includes('engord') ||
+    text.includes('gorda') ||
+    text.includes('flaca') ||
+    text.includes('feo') ||
+    text.includes('fea') ||
+    text.includes('no me gusto') ||
+    text.includes('no me gusta mi cuerpo')
+  ) {
+    return (
+      'Lidiar con una relación difícil con el cuerpo puede ser muy agotador 💜. Es entendible que te sientas así en una cultura tan exigente con la imagen. ' +
+      'Tu valor no se reduce a una forma, a un talle o a un número. Podés empezar con gestos muy pequeños de amabilidad hacia vos misma: notar algo que valorás de vos que no tenga que ver con lo físico, o elegir contenidos en redes que no te lastimen. ' +
+      'Trabajar esto con profesionales que se enfoquen en salud en todas las tallas o TCA puede acompañarte a construir una relación más suave con tu cuerpo. 🌱'
+    );
+  }
+
+  // Tristeza, bajón, desmotivación
+  if (
+    text.includes('triste') ||
+    text.includes('bajón') ||
+    text.includes('bajon') ||
+    text.includes('sin ganas') ||
+    text.includes('vacía') ||
+    text.includes('vacia') ||
+    text.includes('depre') ||
+    text.includes('deprimida')
+  ) {
+    return (
+      'Siento que estés pasando por un momento tan pesado 💜. Estar triste o sin energía no significa que estés fallando, es una señal de que algo necesita atención y cuidado. ' +
+      'Podés empezar por algo pequeño que te conecte un poquito con calma o apoyo: mandar un mensaje a alguien de confianza, poner música suave, escribir lo que sentís. ' +
+      'Si esta sensación se sostiene varios días o te cuesta mucho hacer tus actividades, te sugiero buscar ayuda profesional para no llevar esto sola. 🌙'
+    );
+  }
+
+  // Sueño / cansancio
+  if (
+    text.includes('dormir') ||
+    text.includes('insomnio') ||
+    text.includes('no puedo dormir') ||
+    text.includes('me cuesta dormir') ||
+    text.includes('cansada') ||
+    text.includes('agotada')
+  ) {
+    return (
+      'El descanso impacta un montón en cómo nos sentimos con la comida, el cuerpo y las emociones 💜. ' +
+      'Podés probar pequeñas rutinas antes de dormir: bajar la luz, alejarte un ratito del celular, hacer un par de respiraciones suaves o estiramientos tranquilos. ' +
+      'Si te cuesta dormir desde hace tiempo o notás que afecta mucho tu día a día, sería importante charlarlo con un profesional de salud para encontrar opciones seguras para vos. 🌱'
+    );
+  }
+
+  // Saludos / consultas generales
+  if (
+    text.includes('hola') ||
+    text.includes('buenas') ||
+    text.includes('ola') ||
+    text.includes('hey')
+  ) {
+    return (
+      '¡Hola! Gracias por escribirme 💜. Soy NuraBot, un acompañante digital pensado para estar cerca cuando lo necesites. ' +
+      'Podés contarme qué te preocupa hoy en relación a la comida, el cuerpo o cómo te venís sintiendo, y voy a intentar devolverte un mensaje cuidadoso y sin juicios. ' +
+      'Recordá que no reemplazo a un tratamiento profesional, pero sí puedo ayudarte a dar un primer paso para pedir ayuda o mirar la situación con un poco más de calma. 🌙'
+    );
+  }
+
+  // Respuesta genérica empática
+  return (
+    'Gracias por animarte a poner en palabras lo que estás viviendo 💜. Lo que sentís es válido y no habla mal de vos, habla de que estás atravesando algo que te está costando. ' +
+    'Desde acá puedo ofrecerte contención y algunas ideas generales de autocuidado, pero no reemplazo el acompañamiento de un equipo de salud. ' +
+    'Si querés, podés contarme un poco más qué es lo que más te preocupa ahora, y pensamos juntas cuál podría ser un siguiente paso amable con vos misma. 🌱'
+  );
 };
 
-// Enviar mensaje
+
 const sendMessage = async () => {
   const text = userInput.value.trim();
   if (!text || loading.value) return;
 
   errorMsg.value = '';
 
+  // Agregar mensaje del usuario
   messages.value.push({
     id: Date.now(),
     from: 'user',
@@ -121,10 +214,29 @@ const sendMessage = async () => {
 
   try {
     loading.value = true;
-    const reply = await askNuri(text);
 
+    // Mostrar "NuraBot está escribiendo..."
     messages.value.push({
-      id: Date.now() + 1,
+      id: Date.now() + 100,
+      from: 'bot',
+      text: 'NuraBot está escribiendo…',
+      time: '',
+    });
+
+    await scrollToBottom();
+
+    // Espera real (1.6 segundos)
+    await new Promise(resolve => setTimeout(resolve, 1600));
+
+    // Generar respuesta verdadera
+    const reply = generateLocalReply(text);
+
+    // Eliminar el mensaje "escribiendo…"
+    messages.value = messages.value.filter(m => !m.text.includes('está escribiendo'));
+
+    // Agregar la respuesta real
+    messages.value.push({
+      id: Date.now() + 200,
       from: 'bot',
       text: reply,
       time: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
@@ -139,6 +251,7 @@ const sendMessage = async () => {
     loading.value = false;
   }
 };
+
 
 // Enviar con Enter
 const onKeyDown = (event: KeyboardEvent) => {
@@ -179,7 +292,7 @@ const onKeyDown = (event: KeyboardEvent) => {
       </div>
 
       <p v-if="loading" class="typing">
-        NuraBot está escribiendo...
+        NuraBot está pensando...
       </p>
     </div>
 
@@ -198,7 +311,6 @@ const onKeyDown = (event: KeyboardEvent) => {
         />
       </div>
 
-      <!-- Botón mic (decorativo, sin lógica por ahora) -->
       <button type="button" class="mic-btn" aria-label="Grabar mensaje de voz (próximamente)">
         🎤
       </button>
@@ -220,6 +332,7 @@ const onKeyDown = (event: KeyboardEvent) => {
 </template>
 
 <style scoped>
+/* dejo tu mismo CSS de antes (burbuja, input, etc.) */
 .chat-page {
   max-width: 960px;
   margin: 0 auto;
@@ -282,7 +395,7 @@ const onKeyDown = (event: KeyboardEvent) => {
 }
 
 .bubble--user {
-  background: #dff4f4; /* tono suave tipo screenshot */
+  background: #dff4f4;
   color: #123;
   border-bottom-right-radius: 4px;
 }
@@ -305,7 +418,6 @@ const onKeyDown = (event: KeyboardEvent) => {
   margin-top: 0.2rem;
 }
 
-/* Área de input */
 .input-area {
   display: flex;
   align-items: center;
@@ -357,7 +469,7 @@ const onKeyDown = (event: KeyboardEvent) => {
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  background: #6f8cff; /* azul tipo captura */
+  background: #6f8cff;
   color: #ffffff;
   transition: background 0.15s ease;
 }
@@ -383,7 +495,6 @@ const onKeyDown = (event: KeyboardEvent) => {
   color: #777;
 }
 
-/* Responsive */
 @media (max-width: 640px) {
   .chat-box {
     padding: 1rem;
